@@ -2,23 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
 )
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/home" {
-		http.Error(w, "Oops requested URL not found", http.StatusNotFound)
-		return
-	}
-	if r.Method != "GET" {
-		http.Error(w, "Method is not supported", http.StatusMethodNotAllowed)
-	}
-	fmt.Fprintf(w, "Welcome Home!")
-}
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -29,12 +21,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	http.HandleFunc("/home", homeHandler)
 
-	fmt.Printf("Starting HTTP server on port %d\n", port)
+	e := echo.New()
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
-		log.Fatal(err)
-	}
+	e.GET("/", home)
 
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
+}
+
+func home(c echo.Context) error {
+	return c.HTML(http.StatusOK, "<h1>Home!</h1>")
 }
