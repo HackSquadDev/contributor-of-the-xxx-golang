@@ -1,25 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
+	"github.com/machinebox/graphql"
 )
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/home" {
-		http.Error(w, "Oops requested URL not found", http.StatusNotFound)
-		return
-	}
-	if r.Method != "GET" {
-		http.Error(w, "Method is not supported", http.StatusMethodNotAllowed)
-	}
-	fmt.Fprintf(w, "Welcome Home!")
-}
 func main() {
+	// Load ENVs
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -29,12 +24,47 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	http.HandleFunc("/home", homeHandler)
+	// Initialize Echo
+	e := echo.New()
 
-	fmt.Printf("Starting HTTP server on port %d\n", port)
+	e.GET("/", home)
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
+}
+
+func home(c echo.Context) error {
+	client := graphql.NewClient("https://api.github.com/graphql")
+	response := requestData(client)
+	return c.HTML(http.StatusOK, response.Licenses[0].Name)
+}
+
+// GraphQL Related Functions
+func requestData(client *graphql.Client) GitHubResponse {
+	query := `
+	{
+		licenses {
+			name
+			featured
+		}
+	}
+	`
+	request := graphql.NewRequest(query)
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken == "" {
+		log.Fatal("GITHUB_TOKEN is empty.")
+	}
+	request.Header.Set("Authorization", fmt.Sprintf("bearer %s", githubToken))
+	var resp GitHubResponse
+	err := client.Run(context.Background(), request, &resp)
+	if err != nil {
 		log.Fatal(err)
 	}
+	return resp
+}
 
+type GitHubResponse struct {
+	Licenses []struct {
+		Name     string
+		Featured bool
+	}
 }
