@@ -19,15 +19,6 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(w, "Welcome Home!")
 }
-func formHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		fmt.Fprintf(w, "Form Parsing Error : %v", err)
-		return
-	}
-	fmt.Fprintf(w, "Form submitted successfully\n")
-	orgUrl := r.FormValue("orgURL")
-	fmt.Fprintf(w, "Organization URL: %s", orgUrl)
-}
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -38,10 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fileServer := http.FileServer(http.Dir("./static"))
-	http.Handle("/", fileServer)
 	http.HandleFunc("/home", homeHandler)
-	http.HandleFunc("/submit", formHandler)
 
 	fmt.Printf("Starting HTTP server on port %d\n", port)
 
