@@ -33,27 +33,56 @@ func main() {
 
 func home(c echo.Context) error {
 	client := graphql.NewClient("https://api.github.com/graphql")
-	response := requestData(client)
-	return c.HTML(http.StatusOK, response.Licenses[0].Name)
+	response := requestOrganization(client, "")
+	hasNextPage := response.Organization.Repositories.PageInfo.HasNextPage
+	html := ""
+	endCursor := ""
+
+	for hasNextPage {
+		response = requestOrganization(client, endCursor)
+		hasNextPage = response.Organization.Repositories.PageInfo.HasNextPage
+		endCursor = response.Organization.Repositories.PageInfo.EndCursor
+		// sending data as HTML for now
+		for i := 0; i < len(response.Organization.Repositories.Nodes); i++ {
+			html += response.Organization.Repositories.Nodes[i].Name
+			html += "<br/>"
+		}
+	}
+	// TODO: Store the data in some Data structure
+	return c.HTML(http.StatusOK, html)
 }
 
 // GraphQL Related Functions
-func requestData(client *graphql.Client) GitHubResponse {
-	query := `
+func requestOrganization(client *graphql.Client, endCursor string) ResponseOrganization {
+	query := fmt.Sprintf(`
 	{
-		licenses {
-			name
-			featured
+		organization(login:"%s") {
+		  id
+		  name
+		  login
+		  url
+		  avatarUrl
+		  repositories(orderBy:{field:PUSHED_AT, direction:DESC}, first:100, privacy:PUBLIC, isFork:false, %s) {
+			totalCount
+			pageInfo {
+			  startCursor
+			  endCursor
+			  hasNextPage
+			  hasPreviousPage
+			}
+			nodes {
+			  id
+			  name
+			  description
+			  url
+			  stargazerCount
+			}
+		  }
 		}
-	}
-	`
-	request := graphql.NewRequest(query)
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	if githubToken == "" {
-		log.Fatal("GITHUB_TOKEN is empty.")
-	}
-	request.Header.Set("Authorization", fmt.Sprintf("bearer %s", githubToken))
-	var resp GitHubResponse
+	  }
+	`, os.Getenv("GITHUB_ORG_NAME"), checkEndCursor(endCursor))
+	request := makeRequest(query)
+	var resp ResponseOrganization
 	err := client.Run(context.Background(), request, &resp)
 	if err != nil {
 		log.Fatal(err)
@@ -61,9 +90,47 @@ func requestData(client *graphql.Client) GitHubResponse {
 	return resp
 }
 
-type GitHubResponse struct {
-	Licenses []struct {
-		Name     string
-		Featured bool
+func checkEndCursor(cursor string) string {
+	if cursor != "" {
+		return fmt.Sprintf("after:\"%s\"", cursor)
 	}
+	return ""
+}
+
+func makeRequest(query string) *graphql.Request {
+	request := graphql.NewRequest(query)
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken == "" {
+		log.Fatal("GITHUB_TOKEN is empty.")
+	}
+	request.Header.Set("Authorization", fmt.Sprintf("bearer %s", githubToken))
+	return request
+}
+
+type ResponseOrganization struct {
+	Organization struct {
+		Id           string
+		Name         string
+		Login        string
+		Url          string
+		AvatarUrl    string
+		Repositories struct {
+			TotalCount int
+			PageInfo   struct {
+				StartCursor     string
+				EndCursor       string
+				HasNextPage     bool
+				hasPreviousPage bool
+			}
+			Nodes []ResponseRepository
+		}
+	}
+}
+
+type ResponseRepository struct {
+	Id             string
+	Name           string
+	Description    string
+	Url            string
+	StargazerCount int
 }
