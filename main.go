@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -34,55 +36,92 @@ func main() {
 func home(c echo.Context) error {
 	client := graphql.NewClient("https://api.github.com/graphql")
 	response := requestOrganization(client, "")
-	hasNextPage := response.Organization.Repositories.PageInfo.HasNextPage
+	hasNextPage := response.Search.PageInfo.HasNextPage
 	html := ""
 	endCursor := ""
+	PrCount := make(map[string]int)
+	// bots have apps in their url.
+	// Ex: https://github.com/apps/copybara-service
+	r, err := regexp.Compile("^.*/apps/.*$")
 
 	for hasNextPage {
 		response = requestOrganization(client, endCursor)
-		hasNextPage = response.Organization.Repositories.PageInfo.HasNextPage
-		endCursor = response.Organization.Repositories.PageInfo.EndCursor
-		// sending data as HTML for now
-		for i := 0; i < len(response.Organization.Repositories.Nodes); i++ {
-			html += response.Organization.Repositories.Nodes[i].Name
-			html += "<br/>"
+		hasNextPage = response.Search.PageInfo.HasNextPage
+		endCursor = response.Search.PageInfo.EndCursor
+		// html += response.Search.Nodes[0].Author.Login + "<br />"
+		for i := 0; i < len(response.Search.Nodes); i++ {
+			// if it is a bot
+			if r.MatchString(response.Search.Nodes[i].Author.Url) {
+				continue
+			}
+
+			PrCount[response.Search.Nodes[i].Author.Login]++
 		}
 	}
+	winnerName := ""
+	mx := 0
+	if err != nil {
+		c.Logger().Panic("Unable to compile regexp: %v", err)
+	}
+
+	for name, prs := range PrCount {
+		html += name + ": " + fmt.Sprintf("%d", prs)
+		html += "<br/>"
+		if prs > mx {
+			mx = prs
+			winnerName = name
+		}
+	}
+	var winnerDude RepositoryResponse
+	c.Logger().Printf("Winner %s: PRs: %d", winnerName, mx)
+	for _, dude := range response.Search.Nodes {
+		if dude.Author.Login == winnerName {
+			winnerDude = dude
+			break
+		}
+
+	}
+	c.Logger().Printf("%v", winnerDude)
 	// TODO: Store the data in some Data structure
 	return c.HTML(http.StatusOK, html)
 }
 
 // GraphQL Related Functions
-func requestOrganization(client *graphql.Client, endCursor string) ResponseOrganization {
+func requestOrganization(client *graphql.Client, endCursor string) SearchResponse {
+	// NOTE: DON'T EVEN THINK ABOUT TOUCHING THESE LINES.
+	// refer https://stackoverflow.com/questions/33119748/convert-time-time-to-string#comment70144458_33119937
+	// YYYY-MM-DD
+
+	aWeekAgo := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+	today := time.Now().Format("2006-01-02")
 	query := fmt.Sprintf(`
-	{
-		organization(login:"%s") {
-		  id
-		  name
-		  login
-		  url
-		  avatarUrl
-		  repositories(orderBy:{field:PUSHED_AT, direction:DESC}, first:100, privacy:PUBLIC, isFork:false, %s) {
-			totalCount
-			pageInfo {
-			  startCursor
-			  endCursor
-			  hasNextPage
-			  hasPreviousPage
-			}
-			nodes {
-			  id
-			  name
-			  description
-			  url
-			  stargazerCount
-			}
-		  }
-		}
-	  }
-	`, os.Getenv("GITHUB_ORG_NAME"), checkEndCursor(endCursor))
+{
+  search(
+    first: 100
+    type: ISSUE,
+    query: "org:%s is:pr is:merged merged:%s..%s -author:robot"
+    %s
+  ) {
+    nodes {
+      ... on PullRequest {
+        title
+        url
+        author{
+          avatarUrl
+          url
+          login
+        }
+      }
+    }
+    pageInfo{
+      hasNextPage
+      endCursor
+    }
+  }
+}	`, os.Getenv("GITHUB_ORG_NAME"), aWeekAgo, today, checkEndCursor(endCursor))
+	// fmt.Printf(query)
 	request := makeRequest(query)
-	var resp ResponseOrganization
+	var resp SearchResponse
 	err := client.Run(context.Background(), request, &resp)
 	if err != nil {
 		log.Fatal(err)
@@ -107,30 +146,21 @@ func makeRequest(query string) *graphql.Request {
 	return request
 }
 
-type ResponseOrganization struct {
-	Organization struct {
-		Id           string
-		Name         string
-		Login        string
-		Url          string
-		AvatarUrl    string
-		Repositories struct {
-			TotalCount int
-			PageInfo   struct {
-				StartCursor     string
-				EndCursor       string
-				HasNextPage     bool
-				hasPreviousPage bool
-			}
-			Nodes []ResponseRepository
+type SearchResponse struct {
+	Search struct {
+		Nodes    []RepositoryResponse
+		PageInfo struct {
+			HasNextPage bool
+			EndCursor   string
 		}
 	}
 }
-
-type ResponseRepository struct {
-	Id             string
-	Name           string
-	Description    string
-	Url            string
-	StargazerCount int
+type RepositoryResponse struct {
+	Title  string
+	Url    string
+	Author struct {
+		AvatarURL string
+		Login     string
+		Url       string
+	}
 }
