@@ -1,59 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/joho/godotenv"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/labstack/echo/v4"
+	"github.com/machinebox/graphql"
 )
 
-type Organization struct {
-	Repositories []Repository
-	Logo         string
-}
-type Owner struct {
-	Login string `json:"avatar_url"`
-}
-type Repository struct {
-	Name      string
-	Full_name string
-}
-
-func getPage(orgName string, pageNo int, ItemsPerPage int, GithubToken string) (Organization, error) {
-	client := &http.Client{
-		Timeout: time.Second * 20,
-	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/orgs/%s/repos?page=%d&per_page=%d", orgName, pageNo, ItemsPerPage), nil)
-	if err != nil {
-		return Organization{}, err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", GithubToken))
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return Organization{}, err
-	}
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return Organization{}, err
-	}
-	var org Organization
-	err = jsoniter.Unmarshal(bodyBytes, &org.Repositories)
-	if err != nil {
-		return Organization{}, err
-
-	}
-	org.Logo = jsoniter.Get(bodyBytes, 0, "owner", "avatar_url").ToString()
-	return org, nil
-
-}
 func main() {
 	// Load ENVs
 	err := godotenv.Load(".env")
@@ -64,24 +23,114 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Initialize Echo
 	e := echo.New()
+
 	e.GET("/", home)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }
 
 func home(c echo.Context) error {
-	orgName := os.Getenv("ORG")
-	GithubToken := os.Getenv("GITHUB_TOKEN")
-	var org Organization
+	client := graphql.NewClient("https://api.github.com/graphql")
+	response := requestOrganization(client, "")
+	hasNextPage := response.Organization.Repositories.PageInfo.HasNextPage
+	html := ""
+	endCursor := ""
 
-	temp, err := getPage(orgName, 1, 100, GithubToken)
-	for i := 2; len(temp.Repositories) != 0; i++ {
-		c.Logger().Printf("Page %d", i)
-		temp, err = getPage(orgName, i, 100, GithubToken)
-		if err != nil {
-			c.Logger().Fatal(err)
+	for hasNextPage {
+		response = requestOrganization(client, endCursor)
+		hasNextPage = response.Organization.Repositories.PageInfo.HasNextPage
+		endCursor = response.Organization.Repositories.PageInfo.EndCursor
+		// sending data as HTML for now
+		for i := 0; i < len(response.Organization.Repositories.Nodes); i++ {
+			html += response.Organization.Repositories.Nodes[i].Name
+			html += "<br/>"
 		}
-		org.Repositories = append(org.Repositories, temp.Repositories...)
 	}
-	return c.HTML(http.StatusOK, fmt.Sprintf("%d\n", len(org.Repositories)))
+	// TODO: Store the data in some Data structure
+	return c.HTML(http.StatusOK, html)
+}
+
+// GraphQL Related Functions
+func requestOrganization(client *graphql.Client, endCursor string) ResponseOrganization {
+	query := fmt.Sprintf(`
+	{
+		organization(login:"%s") {
+		  id
+		  name
+		  login
+		  url
+		  avatarUrl
+		  repositories(orderBy:{field:PUSHED_AT, direction:DESC}, first:100, privacy:PUBLIC, isFork:false, %s) {
+			totalCount
+			pageInfo {
+			  startCursor
+			  endCursor
+			  hasNextPage
+			  hasPreviousPage
+			}
+			nodes {
+			  id
+			  name
+			  description
+			  url
+			  stargazerCount
+			}
+		  }
+		}
+	  }
+	`, os.Getenv("GITHUB_ORG_NAME"), checkEndCursor(endCursor))
+	request := makeRequest(query)
+	var resp ResponseOrganization
+	err := client.Run(context.Background(), request, &resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return resp
+}
+
+func checkEndCursor(cursor string) string {
+	if cursor != "" {
+		return fmt.Sprintf("after:\"%s\"", cursor)
+	}
+	return ""
+}
+
+func makeRequest(query string) *graphql.Request {
+	request := graphql.NewRequest(query)
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken == "" {
+		log.Fatal("GITHUB_TOKEN is empty.")
+	}
+	request.Header.Set("Authorization", fmt.Sprintf("bearer %s", githubToken))
+	return request
+}
+
+type ResponseOrganization struct {
+	Organization struct {
+		Id           string
+		Name         string
+		Login        string
+		Url          string
+		AvatarUrl    string
+		Repositories struct {
+			TotalCount int
+			PageInfo   struct {
+				StartCursor     string
+				EndCursor       string
+				HasNextPage     bool
+				hasPreviousPage bool
+			}
+			Nodes []ResponseRepository
+		}
+	}
+}
+
+type ResponseRepository struct {
+	Id             string
+	Name           string
+	Description    string
+	Url            string
+	StargazerCount int
 }
