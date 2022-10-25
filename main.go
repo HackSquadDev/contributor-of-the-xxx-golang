@@ -43,6 +43,9 @@ func home(c echo.Context) error {
 	// bots have apps in their url.
 	// Ex: https://github.com/apps/copybara-service
 	r, err := regexp.Compile("^.*/apps/.*$")
+	if err != nil {
+		c.Logger().Panic("Unable to compile regexp: %v", err)
+	}
 
 	for hasNextPage {
 		response = requestOrganization(client, endCursor)
@@ -50,7 +53,7 @@ func home(c echo.Context) error {
 		endCursor = response.Search.PageInfo.EndCursor
 		// html += response.Search.Nodes[0].Author.Login + "<br />"
 		for i := 0; i < len(response.Search.Nodes); i++ {
-			// if it is a bot
+			// if it is a bot then don't count
 			if r.MatchString(response.Search.Nodes[i].Author.Url) {
 				continue
 			}
@@ -59,29 +62,26 @@ func home(c echo.Context) error {
 		}
 	}
 	winnerName := ""
-	mx := 0
-	if err != nil {
-		c.Logger().Panic("Unable to compile regexp: %v", err)
-	}
+	highScore := 0
 
 	for name, prs := range PrCount {
 		html += name + ": " + fmt.Sprintf("%d", prs)
 		html += "<br/>"
-		if prs > mx {
-			mx = prs
+		if prs > highScore {
+			highScore = prs
 			winnerName = name
 		}
 	}
-	var winnerDude RepositoryResponse
-	c.Logger().Printf("Winner %s: PRs: %d", winnerName, mx)
+	var winnerData RepositoryResponse
+	c.Logger().Printf("Winner %s: PRs: %d", winnerName, highScore)
 	for _, dude := range response.Search.Nodes {
 		if dude.Author.Login == winnerName {
-			winnerDude = dude
+			winnerData = dude
 			break
 		}
 
 	}
-	c.Logger().Printf("%v", winnerDude)
+	c.Logger().Printf("%v", winnerData)
 	// TODO: Store the data in some Data structure
 	return c.HTML(http.StatusOK, html)
 }
@@ -95,30 +95,31 @@ func requestOrganization(client *graphql.Client, endCursor string) SearchRespons
 	aWeekAgo := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
 	today := time.Now().Format("2006-01-02")
 	query := fmt.Sprintf(`
-{
-  search(
-    first: 100
-    type: ISSUE,
-    query: "org:%s is:pr is:merged merged:%s..%s -author:robot"
-    %s
-  ) {
-    nodes {
-      ... on PullRequest {
-        title
-        url
-        author{
-          avatarUrl
-          url
-          login
-        }
-      }
-    }
-    pageInfo{
-      hasNextPage
-      endCursor
-    }
-  }
-}	`, os.Getenv("GITHUB_ORG_NAME"), aWeekAgo, today, checkEndCursor(endCursor))
+	{
+	search(
+		first: 100
+		type: ISSUE,
+		query: "org:%s is:pr is:merged merged:%s..%s -author:robot"
+		%s
+	) {
+			nodes {
+			... on PullRequest {
+				title
+				url
+				author {
+					avatarUrl
+					url
+					login
+				}
+			}
+			}
+			pageInfo{
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+	`, os.Getenv("GITHUB_ORG_NAME"), aWeekAgo, today, checkEndCursor(endCursor))
 	// fmt.Printf(query)
 	request := makeRequest(query)
 	var resp SearchResponse
