@@ -3,18 +3,29 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/HackSquadDev/contributor-of-the-xxx-golang/types"
+	"html/template"
+	"io"
 	"log"
-	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/HackSquadDev/contributor-of-the-xxx-golang/handler"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/machinebox/graphql"
 )
 
+type TemplateRegistry struct {
+	templates *template.Template
+}
+
+// Implement e.Renderer interface
+func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
 func main() {
 	// Load ENVs
 	err := godotenv.Load(".env")
@@ -28,7 +39,9 @@ func main() {
 
 	// Initialize Echo
 	e := echo.New()
-
+	e.Renderer = &TemplateRegistry{
+		templates: template.Must(template.ParseGlob("public/views/*.html")),
+	}
 	e.GET("/", home)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }
@@ -37,9 +50,10 @@ func home(c echo.Context) error {
 	client := graphql.NewClient("https://api.github.com/graphql")
 	response := requestOrganization(client, "")
 	hasNextPage := response.Search.PageInfo.HasNextPage
-	html := ""
+	// html := ""
 	endCursor := ""
 	PrCount := make(map[string]int)
+	DataMap := make(map[string]types.RepositoryResponse)
 	// bots have apps in their url.
 	// Ex: https://github.com/apps/copybara-service
 	r, err := regexp.Compile("^.*/apps/.*$")
@@ -51,13 +65,12 @@ func home(c echo.Context) error {
 		response = requestOrganization(client, endCursor)
 		hasNextPage = response.Search.PageInfo.HasNextPage
 		endCursor = response.Search.PageInfo.EndCursor
-		// html += response.Search.Nodes[0].Author.Login + "<br />"
 		for i := 0; i < len(response.Search.Nodes); i++ {
 			// if it is a bot then don't count
 			if r.MatchString(response.Search.Nodes[i].Author.Url) {
 				continue
 			}
-
+			DataMap[response.Search.Nodes[i].Author.Login] = response.Search.Nodes[i]
 			PrCount[response.Search.Nodes[i].Author.Login]++
 		}
 	}
@@ -65,29 +78,29 @@ func home(c echo.Context) error {
 	highScore := 0
 
 	for name, prs := range PrCount {
-		html += name + ": " + fmt.Sprintf("%d", prs)
-		html += "<br/>"
+		/* html += name + ": " + fmt.Sprintf("%d", prs)
+		html += "<br/>" */
 		if prs > highScore {
 			highScore = prs
 			winnerName = name
 		}
 	}
-	var winnerData RepositoryResponse
+	var winnerData types.RepositoryResponse
 	c.Logger().Printf("Winner %s: PRs: %d", winnerName, highScore)
-	for _, dude := range response.Search.Nodes {
-		if dude.Author.Login == winnerName {
+	for name, dude := range DataMap {
+		if name == winnerName {
 			winnerData = dude
 			break
 		}
 
 	}
 	c.Logger().Printf("%v", winnerData)
-	// TODO: Store the data in some Data structure
-	return c.HTML(http.StatusOK, html)
+	return handler.HomeHandler(c, winnerData, highScore)
+	// return c.HTML(http.StatusOK, html)
 }
 
 // GraphQL Related Functions
-func requestOrganization(client *graphql.Client, endCursor string) SearchResponse {
+func requestOrganization(client *graphql.Client, endCursor string) types.SearchResponse {
 	// NOTE: DON'T EVEN THINK ABOUT TOUCHING THESE LINES.
 	// refer https://stackoverflow.com/questions/33119748/convert-time-time-to-string#comment70144458_33119937
 	// YYYY-MM-DD
@@ -122,7 +135,7 @@ func requestOrganization(client *graphql.Client, endCursor string) SearchRespons
 	`, os.Getenv("GITHUB_ORG_NAME"), aWeekAgo, today, checkEndCursor(endCursor))
 	// fmt.Printf(query)
 	request := makeRequest(query)
-	var resp SearchResponse
+	var resp types.SearchResponse
 	err := client.Run(context.Background(), request, &resp)
 	if err != nil {
 		log.Fatal(err)
@@ -145,23 +158,4 @@ func makeRequest(query string) *graphql.Request {
 	}
 	request.Header.Set("Authorization", fmt.Sprintf("bearer %s", githubToken))
 	return request
-}
-
-type SearchResponse struct {
-	Search struct {
-		Nodes    []RepositoryResponse
-		PageInfo struct {
-			HasNextPage bool
-			EndCursor   string
-		}
-	}
-}
-type RepositoryResponse struct {
-	Title  string
-	Url    string
-	Author struct {
-		AvatarURL string
-		Login     string
-		Url       string
-	}
 }
