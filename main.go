@@ -104,7 +104,7 @@ func home(c echo.Context) error {
 
 	fmt.Printf("%v \n", imageLink)
 	// get dominant colors from this image using colorExtractor module
-	dominantColors, err := ColorExtractor.GetColorsv2(imageLink)
+	dominantColors, err := ColorExtractor.GetColors(imageLink)
 	if err != nil {
 		c.Logger().Panic("Unable to get colors: %v", err)
 	}
