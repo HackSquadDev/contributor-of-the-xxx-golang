@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/HackSquadDev/contributor-of-the-xxx-golang/types"
 	"html/template"
 	"io"
 	"log"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/HackSquadDev/contributor-of-the-xxx-golang/handler"
+	"github.com/HackSquadDev/contributor-of-the-xxx-golang/types"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/machinebox/graphql"
@@ -48,7 +48,7 @@ func main() {
 
 func home(c echo.Context) error {
 	client := graphql.NewClient("https://api.github.com/graphql")
-	response := requestOrganization(client, "")
+	response := requestMergedPrs(client, "")
 	hasNextPage := response.Search.PageInfo.HasNextPage
 	// html := ""
 	endCursor := ""
@@ -62,7 +62,7 @@ func home(c echo.Context) error {
 	}
 
 	for hasNextPage {
-		response = requestOrganization(client, endCursor)
+		response = requestMergedPrs(client, endCursor)
 		hasNextPage = response.Search.PageInfo.HasNextPage
 		endCursor = response.Search.PageInfo.EndCursor
 		for i := 0; i < len(response.Search.Nodes); i++ {
@@ -94,13 +94,15 @@ func home(c echo.Context) error {
 		}
 
 	}
+	// get organization details
+	orgData := getOrganizationDetails(client)
 	c.Logger().Printf("%v", winnerData)
-	return handler.HomeHandler(c, winnerData, highScore)
+	return handler.HomeHandler(c, winnerData, highScore, orgData)
 	// return c.HTML(http.StatusOK, html)
 }
 
 // GraphQL Related Functions
-func requestOrganization(client *graphql.Client, endCursor string) types.SearchResponse {
+func requestMergedPrs(client *graphql.Client, endCursor string) types.SearchResponse {
 	// NOTE: DON'T EVEN THINK ABOUT TOUCHING THESE LINES.
 	// refer https://stackoverflow.com/questions/33119748/convert-time-time-to-string#comment70144458_33119937
 	// YYYY-MM-DD
@@ -143,6 +145,28 @@ func requestOrganization(client *graphql.Client, endCursor string) types.SearchR
 	return resp
 }
 
+// graphql function to get organization details
+func getOrganizationDetails(client *graphql.Client) types.OrganizationResponse {
+	query := fmt.Sprintf(`
+	{
+		organization(login: %s) {
+			name
+			url
+			avatarUrl
+			login
+			name
+		}
+	}
+	`, os.Getenv("GITHUB_ORG_NAME"))
+	request := makeRequest(query)
+	var resp types.OrganizationResponse
+	err := client.Run(context.Background(), request, &resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return resp
+
+}
 func checkEndCursor(cursor string) string {
 	if cursor != "" {
 		return fmt.Sprintf("after:\"%s\"", cursor)
