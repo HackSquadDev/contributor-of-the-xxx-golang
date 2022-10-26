@@ -19,8 +19,10 @@ type RepositoryResponse struct {
 	}
 }
 type OrganizationResponse struct {
-	Name      string
-	Url       string
-	AvatarUrl string
-	Login     string
+	Organization struct {
+		Name      string
+		Url       string
+		AvatarUrl string
+		Login     string
+	}
 }

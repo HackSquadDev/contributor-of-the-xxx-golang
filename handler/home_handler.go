@@ -19,9 +19,11 @@ func HomeHandler(c echo.Context, person types.RepositoryResponse, prs int, orgDa
 		// number of prs made
 		"prs": prs,
 		// send the organization details
-		"orgName":       orgData.Name,
-		"orgAvatarURL":  orgData.AvatarUrl,
-		"orgURL":        orgData.Url,
-		"orgGithubName": orgData.Login,
+		"orgName":       orgData.Organization.Name,
+		"orgAvatarURL":  orgData.Organization.AvatarUrl,
+		"orgURL":        orgData.Organization.Url,
+		"orgGithubName": orgData.Organization.Login,
+		// TODO: send the dominant colors
+		// "dominantColors": dominantColors,
 	})
 }
