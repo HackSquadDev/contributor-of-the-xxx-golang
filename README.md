@@ -9,9 +9,8 @@
 
 ## Roadmap
 
-- [ ] A basic http server
-
-- [ ] Github GraphQL API to get Organization data and members
+- [x] A basic HTTP server
+- [x] Github GraphQL API to fetch the top contributor
 - [ ] Design a template for badges
 - [ ] Dynamically add the data of the contributor to generate the image
 - [ ] Make a Gif (animated)
