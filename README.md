@@ -11,7 +11,11 @@
 
 - [x] A basic HTTP server
 - [x] Github GraphQL API to fetch the top contributor
+- [x] Dynamically add the data of the contributor to generate the image
 - [ ] Design a template for badges
-- [ ] Dynamically add the data of the contributor to generate the image
 - [ ] Make a Gif (animated)
 - [ ] Run a cron job every month for the above processes
+
+### API Keys needed
+
+- Imagga, get it from [here](https://imagga.com/)

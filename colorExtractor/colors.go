@@ -1,15 +1,21 @@
 package ColorExtractor
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
+	_ "image/color"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
-	"github.com/cenkalti/dominantcolor"
+	"github.com/HackSquadDev/contributor-of-the-xxx-golang/types"
+	"github.com/go-playground/colors"
+	"github.com/mccutchen/palettor"
+	"github.com/nfnt/resize"
 )
 
 func imageDownloader(url string) (string, error) {
@@ -41,24 +47,31 @@ func FindDomiantColor(fileInput string, numOfColors int) ([]string, error) {
 		fmt.Println("File not found:", fileInput)
 		return nil, err
 	}
-	img, _, err := image.Decode(f)
+	originalImg, _, err := image.Decode(f)
 	if err != nil {
 		return nil, err
 	}
-	temp := dominantcolor.Find(img)
-	// make temp an array of 1 string
-	colors := make([]string, 1)
-	colors = append(colors, dominantcolor.Hex(temp))
+	img := resize.Thumbnail(800, 800, originalImg, resize.Lanczos3)
+	temp, err := palettor.Extract(numOfColors, 20, img)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Dominant colors: %v", temp)
 	// convert each entry in temp to hex and return the new array
-	// var colors []string
-	// for _, color := range temp {
-	// 	colors = append(colors, dominantcolor.Hex(color))
-	// }
-	return colors, nil
+	var hexColors []string
+	for _, color := range temp.Colors() {
+		// convert color to hex
+		log.Printf("\n\ncolor: %v; weight: %v\n\n", color, temp.Weight(color))
+		temp := colors.FromStdColor(color)
+		hexColors = append(hexColors, temp.ToHEX().String())
+		// colors = append(colors, color)
+	}
+	return hexColors, nil
 
 }
 
-func GetColors(url string, numOfColors int) ([]string, error) {
+func GetColorsv1(url string, numOfColors int) ([]string, error) {
 	// download the image
 	fileName, err := imageDownloader(url)
 	if err != nil {
@@ -73,4 +86,41 @@ func GetColors(url string, numOfColors int) ([]string, error) {
 	}
 	fmt.Println("Dominant color: ", color)
 	return color, nil
+}
+func GetColorsv2(url string) (types.ThemeColors, error) {
+	client := &http.Client{}
+	imagga_api_key := os.Getenv("IMAGGA_API_KEY")
+	imagga_api_secret := os.Getenv("IMAGGA_API_SECRET")
+	req, err := http.NewRequest("GET", "https://api.imagga.com/v2/colors?image_url="+url, nil)
+	if err != nil {
+		return types.ThemeColors{}, err
+	}
+	req.SetBasicAuth(imagga_api_key, imagga_api_secret)
+	resp, err := client.Do(req)
+	if err != nil {
+		return types.ThemeColors{}, err
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return types.ThemeColors{}, err
+	}
+	// log.Println(string(respBody))
+	var result types.ColorResponse
+	json.Unmarshal([]byte(respBody), &result)
+	// log result
+	// log.Printf("result: %v", result)
+	var colors types.ThemeColors
+	for _, hex := range result.Result.Colors.BackgroundColors {
+		colors.BackgroundColors = append(colors.BackgroundColors, hex.HTMLCode)
+	}
+	for _, hex := range result.Result.Colors.ForegroundColors {
+		colors.ForegroundColors = append(colors.ForegroundColors, hex.HTMLCode)
+	}
+	for _, hex := range result.Result.Colors.ImageColors {
+		colors.ImageColors = append(colors.ImageColors, hex.HTMLCode)
+	}
+	log.Printf("colors: %v", colors)
+	return colors, nil
+
 }

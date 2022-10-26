@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func HomeHandler(c echo.Context, person types.RepositoryResponse, prs int, orgData types.OrganizationResponse) error {
+func HomeHandler(c echo.Context, person types.RepositoryResponse, prs int, orgData types.OrganizationResponse, dominantColors types.ThemeColors) error {
 	// Please note the the second parameter "home.html" is the template name and should
 	// be equal to the value stated in the {{ define }} statement in "view/home.html"
 	return c.Render(http.StatusOK, "home.html", map[string]interface{}{
@@ -23,7 +23,7 @@ func HomeHandler(c echo.Context, person types.RepositoryResponse, prs int, orgDa
 		"orgAvatarURL":  orgData.Organization.AvatarUrl,
 		"orgURL":        orgData.Organization.Url,
 		"orgGithubName": orgData.Organization.Login,
-		// TODO: send the dominant colors
-		// "dominantColors": dominantColors,
+		// send the dominant colors
+		"dominantColors": dominantColors,
 	})
 }

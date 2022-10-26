@@ -1,0 +1,118 @@
+{
+    "result": {
+        "colors": {
+            "background_colors": [
+                {
+                    "b": 255,
+                    "closest_palette_color": "white",
+                    "closest_palette_color_html_code": "#f4f5f0",
+                    "closest_palette_color_parent": "white",
+                    "closest_palette_distance": 3.46855902671814,
+                    "g": 255,
+                    "html_code": "#ffffff",
+                    "percent": 99.9829559326172,
+                    "r": 255
+                }
+            ],
+            "color_percent_threshold": 1.75,
+            "color_variance": 60,
+            "foreground_colors": [
+                {
+                    "b": 38,
+                    "closest_palette_color": "graphite",
+                    "closest_palette_color_html_code": "#3a3536",
+                    "closest_palette_color_parent": "black",
+                    "closest_palette_distance": 6.16842031478882,
+                    "g": 39,
+                    "html_code": "#272726",
+                    "percent": 47.9929656982422,
+                    "r": 39
+                },
+                {
+                    "b": 61,
+                    "closest_palette_color": "dark beige",
+                    "closest_palette_color_html_code": "#bc925d",
+                    "closest_palette_color_parent": "skin",
+                    "closest_palette_distance": 5.73687028884888,
+                    "g": 140,
+                    "html_code": "#b78c3d",
+                    "percent": 37.5151557922363,
+                    "r": 183
+                },
+                {
+                    "b": 241,
+                    "closest_palette_color": "cornflower",
+                    "closest_palette_color_html_code": "#4d91c6",
+                    "closest_palette_color_parent": "blue",
+                    "closest_palette_distance": 7.10596418380737,
+                    "g": 132,
+                    "html_code": "#4284f1",
+                    "percent": 14.4918756484985,
+                    "r": 66
+                }
+            ],
+            "image_colors": [
+                {
+                    "b": 223,
+                    "closest_palette_color": "honey dew",
+                    "closest_palette_color_html_code": "#d7e8bc",
+                    "closest_palette_color_parent": "light green",
+                    "closest_palette_distance": 8.53030776977539,
+                    "g": 240,
+                    "html_code": "#def0df",
+                    "percent": 50.3082466125488,
+                    "r": 222
+                },
+                {
+                    "b": 39,
+                    "closest_palette_color": "graphite",
+                    "closest_palette_color_html_code": "#3a3536",
+                    "closest_palette_color_parent": "black",
+                    "closest_palette_distance": 5.88989114761353,
+                    "g": 39,
+                    "html_code": "#272727",
+                    "percent": 28.1072845458984,
+                    "r": 39
+                },
+                {
+                    "b": 52,
+                    "closest_palette_color": "fiesta",
+                    "closest_palette_color_html_code": "#be5141",
+                    "closest_palette_color_parent": "red",
+                    "closest_palette_distance": 7.66613912582397,
+                    "g": 66,
+                    "html_code": "#e74234",
+                    "percent": 9.05257892608643,
+                    "r": 231
+                },
+                {
+                    "b": 241,
+                    "closest_palette_color": "cornflower",
+                    "closest_palette_color_html_code": "#4d91c6",
+                    "closest_palette_color_parent": "blue",
+                    "closest_palette_distance": 7.10596418380737,
+                    "g": 132,
+                    "html_code": "#4284f1",
+                    "percent": 8.45734119415283,
+                    "r": 66
+                },
+                {
+                    "b": 8,
+                    "closest_palette_color": "mango",
+                    "closest_palette_color_html_code": "#e2a829",
+                    "closest_palette_color_parent": "gold",
+                    "closest_palette_distance": 5.7466869354248,
+                    "g": 186,
+                    "html_code": "#f7ba08",
+                    "percent": 4.07454633712769,
+                    "r": 247
+                }
+            ],
+            "object_percentage": 58.4325408935547
+        }
+    },
+    "status": {
+        "text": "",
+        "type": "success"
+    }
+}
