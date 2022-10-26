@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	// ColorExtractor "github.com/HackSquadDev/contributor-of-the-xxx-golang/colorExtractor"
+	ColorExtractor "github.com/HackSquadDev/contributor-of-the-xxx-golang/colorExtractor"
 
 	"github.com/HackSquadDev/contributor-of-the-xxx-golang/handler"
 	"github.com/HackSquadDev/contributor-of-the-xxx-golang/types"
@@ -96,24 +96,23 @@ func home(c echo.Context) error {
 			winnerData = dude
 			break
 		}
-
 	}
 	// get organization details
 
 	// get the organization avatar
-	// imageLink := orgData.Organization.AvatarUrl
+	imageLink := orgData.Organization.AvatarUrl
 
-	fmt.Printf("%v \n", orgData)
+	fmt.Printf("%v \n", imageLink)
 	// get dominant colors from this image using colorExtractor module
-	// dominantColors, err := ColorExtractor.GetColors(imageLink, 1)
+	dominantColors, err := ColorExtractor.GetColorsv2(imageLink)
 	if err != nil {
 		c.Logger().Panic("Unable to get colors: %v", err)
 	}
 	// log the dominant colors
-	// c.Logger().Printf("\nDominant colors: %v\n", dominantColors)
+	c.Logger().Printf("\nDominant colors: %v\n", dominantColors)
 
 	// c.Logger().Printf("%v", winnerData)
-	return handler.HomeHandler(c, winnerData, highScore, orgData)
+	return handler.HomeHandler(c, winnerData, highScore, orgData, dominantColors)
 	// return c.HTML(http.StatusOK, html)
 }
 

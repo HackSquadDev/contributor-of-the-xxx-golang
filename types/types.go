@@ -26,3 +26,25 @@ type OrganizationResponse struct {
 		Login     string
 	}
 }
+
+// data as got from imagga API
+type ColorResponse struct {
+	Result struct {
+		Colors struct {
+			BackgroundColors []struct {
+				HTMLCode string `json:"html_code"`
+			} `json:"background_colors"`
+			ForegroundColors []struct {
+				HTMLCode string `json:"html_code"`
+			} `json:"foreground_colors"`
+			ImageColors []struct {
+				HTMLCode string `json:"html_code"`
+			} `json:"image_colors"`
+		} `json:"colors"`
+	} `json:"result"`
+}
+type ThemeColors struct {
+	BackgroundColors []string
+	ForegroundColors []string
+	ImageColors      []string
+}
