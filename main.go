@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	// ColorExtractor "github.com/HackSquadDev/contributor-of-the-xxx-golang/colorExtractor"
+
 	"github.com/HackSquadDev/contributor-of-the-xxx-golang/handler"
 	"github.com/HackSquadDev/contributor-of-the-xxx-golang/types"
 	"github.com/joho/godotenv"
@@ -40,7 +42,7 @@ func main() {
 	// Initialize Echo
 	e := echo.New()
 	e.Renderer = &TemplateRegistry{
-		templates: template.Must(template.ParseGlob("public/views/*.html")),
+		templates: template.Must(template.ParseGlob("public/views/*.go.html")),
 	}
 	e.GET("/", home)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
@@ -48,6 +50,8 @@ func main() {
 
 func home(c echo.Context) error {
 	client := graphql.NewClient("https://api.github.com/graphql")
+	client2 := graphql.NewClient("https://api.github.com/graphql")
+	orgData := getOrganizationDetails(client2)
 	response := requestMergedPrs(client, "")
 	hasNextPage := response.Search.PageInfo.HasNextPage
 	// html := ""
@@ -95,8 +99,20 @@ func home(c echo.Context) error {
 
 	}
 	// get organization details
-	orgData := getOrganizationDetails(client)
-	c.Logger().Printf("%v", winnerData)
+
+	// get the organization avatar
+	// imageLink := orgData.Organization.AvatarUrl
+
+	fmt.Printf("%v \n", orgData)
+	// get dominant colors from this image using colorExtractor module
+	// dominantColors, err := ColorExtractor.GetColors(imageLink, 1)
+	if err != nil {
+		c.Logger().Panic("Unable to get colors: %v", err)
+	}
+	// log the dominant colors
+	// c.Logger().Printf("\nDominant colors: %v\n", dominantColors)
+
+	// c.Logger().Printf("%v", winnerData)
 	return handler.HomeHandler(c, winnerData, highScore, orgData)
 	// return c.HTML(http.StatusOK, html)
 }
@@ -149,12 +165,11 @@ func requestMergedPrs(client *graphql.Client, endCursor string) types.SearchResp
 func getOrganizationDetails(client *graphql.Client) types.OrganizationResponse {
 	query := fmt.Sprintf(`
 	{
-		organization(login: %s) {
+		organization(login: "%s") {
 			name
 			url
 			avatarUrl
 			login
-			name
 		}
 	}
 	`, os.Getenv("GITHUB_ORG_NAME"))

@@ -2,12 +2,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Boatswain Blog | {{index . "title"}}</title>
+    <title{{index . "title"}}</title>
   </head>
   <body>
     <h1>{{index . "msg"}}</h1>
     <a href={{index . "profileLink"}} target="_blank"> <img src={{index . "avatarURL"}} alt={{index . "msg"}}/> </a>
     <h2>Total PRs merged: {{index . "prs"}} </h2>
+    
   </body>
 </html>
 {{end}}
