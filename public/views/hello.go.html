@@ -1,13 +1,134 @@
 {{define "home.html"}}
 <!DOCTYPE html>
-<html>
-  <head>
-    <title{{index . "title"}}</title>
-  </head>
-  <body>
-    <h1>{{index . "msg"}}</h1>
-    <a href={{index . "profileLink"}} target="_blank"> <img src={{index . "avatarURL"}} alt={{index . "msg"}}/> </a>
-    <h2>Total PRs merged: {{index . "prs"}} </h2>
-  </body>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Contributor of the Month</title>
+    <link rel="stylesheet" href="https://kit-pro.fontawesome.com/releases/v5.14.0/css/pro.min.css">
+</head>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto Mono', monospace;
+}
+
+section {
+    position: relative;
+    background: rgb(226,94,240);
+background: -moz-linear-gradient(320deg, rgba(226,94,240,1) 15%, rgba(140,32,222,1) 100%);
+background: -webkit-linear-gradient(320deg, rgba(226,94,240,1) 15%, rgba(140,32,222,1) 100%);
+background: linear-gradient(320deg, rgba(226,94,240,1) 15%, rgba(140,32,222,1) 100%);
+filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#e25ef0",endColorstr="#8c20de",GradientType=1);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.5s;
+}
+
+section .card {
+    position: relative;
+    width: 300px;
+    height: 380px;
+    background: rgba(161, 226, 231, 0.2);
+    /* box-shadow: 0 8px 32px 0 #dddddd12; */
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(s9px);
+    border-radius: 26px;
+    border: 5px solid rgba(255, 255, 255, 0.18);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.5s;
+}
+
+section .card .content,
+section .card .heading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+section .card .heading .avatar_container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    margin-bottom: 15px;
+}
+
+section .card .heading .avatar_container img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+section .card .heading h3 {
+    font-weight: 500;
+    font-size: 1.4em;
+    line-height: 1.2em;
+    text-align: center;
+    color: rgb(91, 17, 85);
+}
+
+section .card .heading h3 span {
+    font-weight: 400;
+    color: #3a1e49;
+    font-size: 0.50em;
+}
+
+section .card .links {
+    display: flex;
+    margin-top: 15px;
+}
+
+section .card .links a {
+    background: #6f1b68;
+    color: rgb(251, 251, 251);
+    margin: 0 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    border-radius: 8px;
+    padding: 5px;
+    font-size: 10px;
+    transition: 0.5s;
+}
+</style>
+
+<body>
+    <section>
+        <div class="card">
+            <div class="content">
+                <div class="heading">
+                    <div class="avatar_container">
+                        <img src="{{index . "avatarURL"}}" alt="avatar">
+                    </div>
+                    <h3>{{index . "name"}}</h3>
+                    <div class="links">
+                        <a href="#"><span style="position: relative; margin-right: 5px;"><i
+                                    class="fab fa-github"></i></span> @{{index . "name"}}</a>
+                    </div>
+                    <h3><span>(Contributor of the month)</h3>
+                    <span style="color:rgb(91, 17, 85)">{{index . "orgName"}}</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
 </html>
 {{end}}
