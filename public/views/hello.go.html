@@ -20,11 +20,6 @@
 
 section {
     position: relative;
-    background: rgb(226,94,240);
-background: -moz-linear-gradient(320deg, rgba(226,94,240,1) 15%, rgba(140,32,222,1) 100%);
-background: -webkit-linear-gradient(320deg, rgba(226,94,240,1) 15%, rgba(140,32,222,1) 100%);
-background: linear-gradient(320deg, rgba(226,94,240,1) 15%, rgba(140,32,222,1) 100%);
-filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#e25ef0",endColorstr="#8c20de",GradientType=1);
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -46,6 +41,11 @@ section .card {
     justify-content: center;
     align-items: center;
     transition: background 0.5s;
+    background: -moz-linear-gradient(320deg, {{ index .dominantColors.ForegroundColors 2   }} 15%, {{ index .dominantColors.ForegroundColors 0   }} 100%);
+    background: -webkit-linear-gradient(320deg, {{ index .dominantColors.ForegroundColors 2   }} 15%, {{ index .dominantColors.ForegroundColors 0   }} 100%);
+    background: linear-gradient(320deg, {{ index .dominantColors.ForegroundColors 2   }} 15%, {{ index .dominantColors.ForegroundColors 0   }} 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr= {{ index .dominantColors.ForegroundColors 2   }},endColorstr = {{ index .dominantColors.ForegroundColors 0   }},GradientType=1);
+
 }
 
 section .card .content,
@@ -128,6 +128,10 @@ section .card .links a {
             </div>
         </div>
     </section>
+
+    {{/* <section>
+    <p> </p>
+    </section> */}}
 </body>
 
 </html>
