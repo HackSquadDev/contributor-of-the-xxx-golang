@@ -56,8 +56,8 @@ func GetImage() {
 		panic(err)
 	}
 	log.Default().Println("Page launched successfully")
-	// Navigate to url
-	_, err = page.Goto(url)
+	// Navigate to url with 200 sec timeout
+	_, err = page.Goto(url, playwright.PageGotoOptions{Timeout: playwright.Float(200000)})
 	if err != nil {
 		panic(err)
 	}
