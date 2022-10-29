@@ -1,4 +1,4 @@
-package ImageExtractor
+package main
 
 import (
 	"log"
@@ -77,7 +77,7 @@ func GetImage() {
 
 	_, err = val.Screenshot(playwright.LocatorScreenshotOptions{
 		// save to file with today's date
-		Path:           playwright.String(time.Now().Format("2006-01-02") + ".png"),
+		Path:           playwright.String("images/" + time.Now().Format("2006-01-02") + ".png"),
 		OmitBackground: playwright.Bool(true),
 	})
 	if err != nil {
@@ -89,4 +89,7 @@ func GetImage() {
 		panic(err)
 	}
 
+}
+func main() {
+	GetImage()
 }
