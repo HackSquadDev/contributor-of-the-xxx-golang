@@ -26,7 +26,7 @@ func Setup() string {
 	}
 	return url
 }
-func getImage() {
+func GetImage() {
 	// Setup
 	url := Setup()
 	// Launch playwright
@@ -79,19 +79,6 @@ func getImage() {
 		Path:           playwright.String(time.Now().Format("2006-01-02") + ".png"),
 		OmitBackground: playwright.Bool(true),
 	})
-	// take screenshot of the browser containing the div with class card
-	// _, err = page.Screenshot(playwright.PageScreenshotOptions{
-	// 	// save to file with today's date
-	// 	Path: playwright.String(time.Now().Format("2006-01-02") + ".png"),
-	// 	// clip the image to the div with class card
-	// 	Clip: &playwright.PageScreenshotOptionsClip{
-	// 		X:      playwright.Float(250),
-	// 		Y:      playwright.Float(250),
-	// 		Width:  playwright.Float(1000),
-	// 		Height: playwright.Float(1000),
-	// 	},
-	// 	// Animations: (*playwright.ScreenshotAnimations)(playwright.String("allow")),
-	// })
 	if err != nil {
 		panic(err)
 	}
