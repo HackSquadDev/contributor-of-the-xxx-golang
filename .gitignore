@@ -20,4 +20,4 @@ go.work
 !.env.example
 .env*
 temp.go
-image.png
+*.png
