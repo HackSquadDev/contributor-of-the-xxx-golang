@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/HackSquadDev/contributor-of-the-xxx-golang/twitter"
 	"github.com/joho/godotenv"
 	"github.com/playwright-community/playwright-go"
 )
@@ -27,7 +29,7 @@ func Setup() string {
 	}
 	return url
 }
-func GetImage() {
+func GetImage() string {
 	// Setup
 	url := Setup()
 	log.Default().Println("Playwright setup successful")
@@ -86,9 +88,10 @@ func GetImage() {
 	log.Default().Println("found div with class card")
 
 	// omit background color in screenshot
+	imageFileName := "images/" + time.Now().Format("2006-01-02") + ".png"
 	_, err = val.Screenshot(playwright.LocatorScreenshotOptions{
 		// save to file with today's date
-		Path:           playwright.String("images/" + time.Now().Format("2006-01-02") + ".png"),
+		Path:           playwright.String(imageFileName),
 		OmitBackground: playwright.Bool(true),
 	})
 	if err != nil {
@@ -102,8 +105,10 @@ func GetImage() {
 		panic(err)
 	}
 	log.Println("closed browser. Done!")
+	return imageFileName
 
 }
 func main() {
-	GetImage()
+	fileName := GetImage()
+	twitter.PostToTwitter(fmt.Sprintf("Contributor of the week for %s", time.Now().Format("2006-01-02")), fileName)
 }
