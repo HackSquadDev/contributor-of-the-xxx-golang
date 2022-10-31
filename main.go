@@ -122,7 +122,7 @@ func requestMergedPrs(client *graphql.Client, endCursor string) types.SearchResp
 	// refer https://stackoverflow.com/questions/33119748/convert-time-time-to-string#comment70144458_33119937
 	// YYYY-MM-DD
 
-	aWeekAgo := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+	aWeekAgo := time.Now().AddDate(0, -1, -7).Format("2006-01-02")
 	today := time.Now().Format("2006-01-02")
 	query := fmt.Sprintf(`
 	{
