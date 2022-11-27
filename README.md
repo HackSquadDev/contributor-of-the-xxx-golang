@@ -1,3 +1,4 @@
+# Archived now.
 ## COTO [Contributor of The Organization] Bot
 
 > A bot that runs in a fixed time interval
